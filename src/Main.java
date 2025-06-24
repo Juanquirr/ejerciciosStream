@@ -136,24 +136,25 @@ public class Main {
 
         // ANIMALS
         //1. Obtener una lista de animales salvajes
-        List<Animal> animals = Main.animals.stream().filter(animal -> !(animal instanceof Pet)).toList();
+        List<Animal> wildAnimals = animals.stream().filter(animal -> !(animal instanceof Pet)).toList();
         //2. Obtener una lista de mascotas
-        List<Animal> pets = Main.animals.stream().filter(animal -> (animal instanceof Pet)).toList();
+        List<Animal> pets = animals.stream().filter(animal -> (animal instanceof Pet)).toList();
         //3. Encontrar el animal con el mayor número de patas
         Animal mostLeggedAnimal = animals.stream().sorted((a, b) -> b.legs() - a.legs()).toList().getFirst();
         //4. Obtener una lista de 100 animales al azar
-
+        List<Animal> animalShuffle = animals.stream().sorted((_, _) -> new Random().nextInt()).limit(100).toList();
         //5. Encontrar el número total de patas
         long patas = animals.stream().mapToInt(Animal::legs).sum();
         //6. Agrupar los animales según el número de patas
-//        animals.stream().collect(Collectors.groupingBy());
-//        System.out.print(collect);
+        Map<Integer, List<Animal>> legsPerAnimals = animals.stream()
+                .collect(Collectors.groupingBy(Animal::legs));
         //7. Contar el número de animales en cada especie
-        Map<? extends Class<? extends Animal>, Long> species = animals.stream()
-                .collect(Collectors.groupingBy(animal -> animal.getClass(), Collectors.counting()));
-        System.out.println(species);
+        Map<String, Long> numberOfAnimalOfAnSpecie = animals.stream()
+                .collect(Collectors.groupingBy(animal -> animal.getClass().getCanonicalName(), Collectors.counting()));
         //8. Contar el número de especies
-        animals.stream();
+        long numberOfSpecies = animals.stream()
+                .collect(Collectors.groupingBy(animal -> animal.getClass(), Collectors.counting()))
+                .size();
     }
 
     private static void initializeMovies() {
