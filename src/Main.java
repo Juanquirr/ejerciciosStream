@@ -3,6 +3,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.*;
 import java.util.stream.Collectors;
+import animals.*;
+import pets.*;
 
 
 record Country(String code, String name, String continent, double surfaceArea, int population, double gnp, int capital, List<City> cities) {
@@ -12,9 +14,11 @@ record Country(String code, String name, String continent, double surfaceArea, i
 public class Main {
     private static List<Country> countries;
     private static List<Movie> movies;
+    private static List<Animal> animals;
     public static void main(String[] args) throws FileNotFoundException {
         initializeCountries();
         initializeMovies();
+        initializeAnimals();
 
         // DICTIONARY
         BufferedReader bufferedReader = new BufferedReader(new FileReader("src/0_palabras_todas.txt"));
@@ -56,7 +60,7 @@ public class Main {
                 )
         );*/
         // 7. Encontrar la población mínima, máxima y promedio de los países del mundo.
-        int statistics = countries.stream().mapToInt(Country::population).summaryStatistics().getMin();
+        int statistics = countries.stream().mapToInt(Country::population).summaryStatistics().getMax();
 //        System.out.println(statistics);
 
         // 8.
@@ -123,6 +127,33 @@ public class Main {
         Integer year = movies.stream().collect(Collectors.groupingBy(Movie::year, Collectors.counting()))
                 .entrySet().stream().max((a, b) -> a.getValue().compareTo(b.getValue()))
                 .orElseThrow().getKey();
+
+        // Encuentrame todos los directores que tengan películas de comedia ordenados por orden alfabético inverso
+        List<Movie.Director> directorList = movies.stream().filter(m -> m.genres().stream()
+                        .anyMatch(g -> g.name().equals("Comedia")))
+                .flatMap(movie -> movie.directors().stream())
+                .sorted(Comparator.comparing(Movie.Director::name).reversed()).toList();
+
+        // ANIMALS
+        //1. Obtener una lista de animales salvajes
+        List<Animal> animals = Main.animals.stream().filter(animal -> !(animal instanceof Pet)).toList();
+        //2. Obtener una lista de mascotas
+        List<Animal> pets = Main.animals.stream().filter(animal -> (animal instanceof Pet)).toList();
+        //3. Encontrar el animal con el mayor número de patas
+        Animal mostLeggedAnimal = animals.stream().sorted((a, b) -> b.legs() - a.legs()).toList().getFirst();
+        //4. Obtener una lista de 100 animales al azar
+
+        //5. Encontrar el número total de patas
+        long patas = animals.stream().mapToInt(Animal::legs).sum();
+        //6. Agrupar los animales según el número de patas
+//        animals.stream().collect(Collectors.groupingBy());
+//        System.out.print(collect);
+        //7. Contar el número de animales en cada especie
+        Map<? extends Class<? extends Animal>, Long> species = animals.stream()
+                .collect(Collectors.groupingBy(animal -> animal.getClass(), Collectors.counting()));
+        System.out.println(species);
+        //8. Contar el número de especies
+        animals.stream();
     }
 
     private static void initializeMovies() {
@@ -150,7 +181,7 @@ public class Main {
         movies.add(new Movie(0, "Star Wars: A New Hope", 1977, "Una rebelión contra el Imperio Galáctico.",
                 List.of(genres.get(3), genres.get(4)), List.of(directors.get(0))));
         movies.add(new Movie(1, "Jurassic Park", 1993, "Un parque temático con dinosaurios vivos.",
-                List.of(genres.get(4), genres.get(2)), List.of(directors.get(1))));
+                List.of(genres.get(4), genres.get(1)), List.of(directors.get(1))));
         movies.add(new Movie(2, "Inception", 2010, "Un ladrón que roba secretos a través de sueños.",
                 List.of(genres.get(3), genres.get(0)), List.of(directors.get(2))));
         movies.add(new Movie(3, "Pulp Fiction", 1994, "Historias entrelazadas del bajo mundo de Los Ángeles.",
@@ -170,11 +201,6 @@ public class Main {
         movies.add(new Movie(10, "The Social Network", 2010, "La creación de Facebook y las luchas legales que siguieron.",
                 List.of(genres.get(0)), List.of(directors.get(5))));
     }
-
-
-
-
-
 
     private static void initializeCountries() {
         countries = new ArrayList<>();
@@ -320,4 +346,23 @@ public class Main {
                 )
         ));
     }
+    private static void initializeAnimals() {
+        animals = List.of(
+                new Pig("JoséJuan"),
+                new Pig("LuisHernández"),
+                new Pig("JoséQuinteiro"),
+                new Dog("JuanCarlosDelPino"),
+                new Hamster("Julio"),
+                new Cat("Ricardo"),
+                new Parrot("Ernestina"),
+                new Parrot("Carlos"),
+                new Octopus(),
+                new Octopus(),
+                new Ant(),
+                new Centipede(),
+                new Kangaroo(),
+                new Frog()
+        );
+    }
+
 }
