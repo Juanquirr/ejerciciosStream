@@ -3,11 +3,13 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.*;
 import java.util.stream.Collectors;
+
 import animals.*;
 import pets.*;
 
 
-record Country(String code, String name, String continent, double surfaceArea, int population, double gnp, int capital, List<City> cities) {
+record Country(String code, String name, String continent, double surfaceArea,
+               int population, double gnp, int capital, List<City> cities) {
     public record City(int id, String name, int population) { }
 }
 
@@ -30,67 +32,98 @@ public class Main {
         List<String> wordsStartingWithN = lines.stream().filter(c -> c.charAt(0) >= 'n').toList();
 
         List<String> palyndrom = lines.stream().filter(c -> c.equals(new StringBuilder(c).reverse().toString())).toList();
-//        System.out.println(palyndrom);
 
         List<String> palydromniggers = lines.stream().filter(c -> {
             int l = c.length();
             for (int i = 0; i < l; i++) if (c.charAt(i) != c.charAt(l - 1 - i)) return false;
             return true;
         }).toList();
-//        System.out.println(palydromniggers);
 
         String largestWord = lines.stream().max((a, b) -> a.length() - b.length()).orElseThrow();
 
         List<String> wordsAZ = lines.stream().filter(c -> c.startsWith("a") && c.endsWith("z")).toList();
-//        System.out.println(wordsAZ);
-
 
         // COUNTRIES
         // 1. Encontrar la ciudad más poblada de cada continente.
-        /*countries.stream().map(Country::continent).distinct().collect(
-                Collectors.toMap(
-                        continent -> continent,
-                        continent -> {
-                            return countries.stream()
-                                    .filter(country -> country.continent().equals(continent))
-                                    .flatMap(country -> country.cities().stream())
-                                    .max(Comparator.comparing(Country.City::population))
-                                    .
-                        }
-                )
-        );*/
-        // 7. Encontrar la población mínima, máxima y promedio de los países del mundo.
-        int statistics = countries.stream().mapToInt(Country::population).summaryStatistics().getMax();
-//        System.out.println(statistics);
-
-        // 8.
-        Map<String, Integer> eight = countries.stream().map(Country::continent).distinct()
+        Map<String, Country.City> mostPopulatedCityOfContinent = countries.stream()
+                .map(Country::continent)
+                .distinct()
                 .collect(Collectors.toMap(
                         continent -> continent,
-                        continent -> {
-                            return countries.stream().filter(c -> c.continent().equals(continent))
-                                    .mapToInt(Country::population).summaryStatistics().getMin();
-                        }
+                        continent -> countries.stream()
+                                .filter(c -> c.continent().equals(continent))
+                                .flatMap(country -> country.cities().stream())
+                                .max((a, b) -> a.population() - b.population())
+                                .orElseThrow()
                 ));
-//        System.out.println(eight);
+
+        // 2. Encontrar la capital más poblada.
+        Country.City cityPopulatest = countries.stream()
+                .flatMap(country -> country.cities().stream()
+                        .filter(city -> city.id() == country.capital()))
+                .max((a, b) -> a.population() - b.population())
+                .orElseThrow();
+
+        // 3. Encontrar la capital más poblada de cada continente.
+        Map<String, String> capitalWithContinent = countries.stream()
+                .map(Country::continent)
+                .distinct()
+                .collect(Collectors.toMap(
+                        continent -> continent,
+                        continent -> countries.stream()
+                                .filter(country -> country.continent().equals(continent))
+                                .flatMap(country -> country.cities().stream()
+                                        .filter(city -> city.id() == country.capital()))
+                                .max((a, b) -> a.population() - b.population())
+                                .orElseThrow()
+                                .name()
+                ));
+
+        // 4. Ordenar los países por número de ciudades en orden descendente.
+        List<String> sortedCountries = countries.stream()
+                .collect(Collectors.toMap(
+                        country -> country.name(),
+                        country -> country.cities().size()
+                )).entrySet().stream()
+                .sorted((a, b) -> b.getValue() - a.getValue()).map(e -> e.getKey()).toList();
+        System.out.println(sortedCountries);
+
+        List<String> sortedCountries2 = countries.stream()
+                .sorted((a, b) -> b.cities().size() - a.cities().size()).map(Country::name).toList();
+        System.out.println(sortedCountries2);
+
+        // 7. Encontrar la población mínima, máxima y promedio de los países del mundo.
+        IntSummaryStatistics statistics = countries.stream().mapToInt(Country::population).summaryStatistics();
+
+        // 8. Encontrar la población mínima, máxima y promedio de cada continente.
+        Map<String, IntSummaryStatistics> statisticsMap = countries.stream()
+                .collect(Collectors.groupingBy(
+                        Country::continent,
+                        Collectors.summarizingInt(Country::population)
+                ));
+
+        Map<String, IntSummaryStatistics> eight = countries.stream().map(Country::continent).distinct()
+                .collect(Collectors.toMap(
+                        continent -> continent,
+                        continent -> countries.stream().filter(c -> c.continent().equals(continent))
+                                .mapToInt(Country::population).summaryStatistics()
+                ));
 
         // 12.
         Map<String, Country.City> minPopulationCityOfACountry = countries.stream().collect(Collectors.toMap(
                 country -> country.name(),
-                country -> {
-                    return countries.stream()
-                            .filter(c -> c.equals(country))
-                            .map(Country::cities)
-                            .flatMap(cities -> cities.stream())
-                            .min((a, b) -> a.population() - (b.population()))
-                            .orElseThrow();
-                }
+                country -> countries.stream()
+                        .filter(c -> c.equals(country))
+                        .map(Country::cities)
+                        .flatMap(cities -> cities.stream())
+                        .min((a, b) -> a.population() - (b.population()))
+                        .orElseThrow()
         ));
-//        System.out.println(minPopulationCityOfACountry);
 
         // MOVIES
         // 1. Obtener el número de películas de cada director
-        Map<Movie.Director, Long> directorMovies = movies.stream().map(Movie::directors).flatMap(directors -> directors.stream()).distinct()
+        Map<Movie.Director, Long> directorMovies = movies.stream().map(Movie::directors)
+                .flatMap(directors -> directors.stream()).distinct()
                 .collect(Collectors.toMap(
                         director -> director,
                         director -> {
@@ -100,7 +133,8 @@ public class Main {
                 ));
 
         // 2. Obtener el número de géneros de las películas de cada director
-        Map<String, Long> directorsAndGenres = movies.stream().map(Movie::directors).flatMap(directors -> directors.stream()).distinct()
+        Map<String, Long> directorsAndGenres = movies.stream().map(Movie::directors)
+                .flatMap(directors -> directors.stream()).distinct()
                 .collect(Collectors.toMap(
                         director -> director.name(),
                         director -> {
@@ -125,7 +159,8 @@ public class Main {
 
         // 5. Encontrar el año en el que hay disponibles la mayor cantidad de películas.
         Integer year = movies.stream().collect(Collectors.groupingBy(Movie::year, Collectors.counting()))
-                .entrySet().stream().max((a, b) -> a.getValue().compareTo(b.getValue()))
+                .entrySet().stream()
+                .max((a, b) -> a.getValue().compareTo(b.getValue()))
                 .orElseThrow().getKey();
 
         // Encuentrame todos los directores que tengan películas de comedia ordenados por orden alfabético inverso
